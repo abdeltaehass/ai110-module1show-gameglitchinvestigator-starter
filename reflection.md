@@ -23,18 +23,21 @@ The biggest issue is that **the hints are backwards**. When I guessed a number h
 
 ## 2. How did you use AI as a teammate?
 
-- Which AI tools did you use on this project (for example: ChatGPT, Gemini, Copilot)?
-- Give one example of an AI suggestion that was correct (including what the AI suggested and how you verified the result).
-- Give one example of an AI suggestion that was incorrect or misleading (including what the AI suggested and how you verified the result).
+I mostly worked with the AI chat assistant built into VS Code, and a couple of times I pasted a single function into ChatGPT for a second opinion. My habit was to attach both `app.py` and `logic_utils.py` so the assistant could see how the UI and the logic connected, then ask about **one bug at a time** instead of dumping the whole file on it.
+
+**A suggestion that was correct:** When I asked why the hints felt backwards, the assistant pointed out that `check_guess` returned the right label ("Too High") but paired it with the wrong message ("📈 Go HIGHER!"), and suggested swapping the messages so "Too High" tells the player to go *lower*. That matched what I was seeing in the game, so I made the change and verified it two ways — a unit test asserting `"LOWER" in hint_for("Too High")`, and replaying the game where guessing 60 against a secret of 50 now correctly says "Go LOWER!".
+
+**A suggestion that was misleading:** At one point the assistant wanted `check_guess` to keep returning a tuple `(outcome, message)` and to *rewrite the starter tests* to unpack it. That would have broken the existing test contract — `check_guess(50, 50) == "Win"` expects a plain string — so I turned it down. Instead I had `check_guess` return just the outcome string and moved the messages into a separate `hint_for()` helper. I confirmed this was the better call by running `pytest` and watching all nine tests pass without changing the original three.
 
 ---
 
 ## 3. Debugging and testing your fixes
 
-- How did you decide whether a bug was really fixed?
-- Describe at least one test you ran (manual or using pytest)  
-  and what it showed you about your code.
-- Did AI help you design or understand any tests? How?
+I decided a bug was really fixed only when I could do two things: watch a test go from failing to passing, **and** reproduce the old broken behavior in the live app and see it behave correctly. For each fix I tried to write the smallest test that would have caught the original bug.
+
+The clearest example was `test_large_guess_is_too_high`, which checks `check_guess(100, 50) == "Too High"`. This failed before the fix, because on even-numbered guesses the secret was turned into a string and `"100"` compared as *less than* `"50"` alphabetically — so the game called 100 "Too Low". After I switched `check_guess` to a numeric comparison, the test passed, which proved the type bug was gone. I also ran an end-to-end check with Streamlit's `AppTest` to play a full round (wrong guess → correct hint, right guess → win, New Game → fresh board) and confirmed no exceptions were raised.
+
+AI helped me get started on the tests by suggesting the basic "60 vs 50 should be Too High" case. I extended that idea myself to cover the cases that had actually broken the game: the 100-vs-50 alphabetical-comparison bug, the hint direction, and a check that a wrong guess never changes the score.
 
 ---
 
