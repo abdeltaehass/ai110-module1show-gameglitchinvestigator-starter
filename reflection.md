@@ -43,13 +43,14 @@ AI helped me get started on the tests by suggesting the basic "60 vs 50 should b
 
 ## 4. What did you learn about Streamlit and state?
 
-- How would you explain Streamlit "reruns" and session state to a friend who has never used Streamlit?
+The biggest thing I learned is that Streamlit re-runs your *entire* script from top to bottom every time you interact with the page — every button click, text entry, or checkbox toggle starts the file over from line one. That means a normal variable gets recreated on every interaction, so anything you want to remember between clicks (the secret number, the score, how many attempts you've used) has to live in `st.session_state`, which Streamlit keeps around across reruns. I'd explain it to a friend like this: the script is like a recipe that gets re-cooked from scratch on every click, and `session_state` is the fridge where you store the ingredients you want to keep between cookings. A lot of the original bugs made more sense once I understood this — for example, the values that *were* in `session_state` (like the secret) survived correctly, but the per-click logic around them was where things went wrong.
 
 ---
 
 ## 5. Looking ahead: your developer habits
 
-- What is one habit or strategy from this project that you want to reuse in future labs or projects?
-  - This could be a testing habit, a prompting strategy, or a way you used Git.
-- What is one thing you would do differently next time you work with AI on a coding task?
-- In one or two sentences, describe how this project changed the way you think about AI generated code.
+**One habit I want to keep:** writing a small test that *reproduces* a bug before I fix it. Seeing `test_large_guess_is_too_high` fail first and then pass gave me real proof the fix worked, instead of just assuming it did because the app "looked fine." I also want to keep committing in small, labeled steps (bugs logged, fixes applied, docs finished) so my history tells the story of what I did.
+
+**One thing I'd do differently:** I'd give the AI more context up front and ask it about one bug at a time. Early on I asked broad questions and got broad, sometimes-wrong answers; the assistant was far more useful once I attached both files and pointed it at a specific symptom.
+
+**How this changed how I think about AI-generated code:** I now treat AI output as a confident first draft, not a finished answer — it's great for spotting a likely cause or scaffolding a test, but it can also suggest changes that quietly break a working contract (like rewriting the starter tests), so I read every diff and verify with tests before trusting it.
