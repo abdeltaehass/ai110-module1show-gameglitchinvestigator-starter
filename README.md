@@ -56,28 +56,50 @@ A sample game on **Normal** difficulty (secret = 50), followed in order:
 
 ## 🧪 Test Results
 
-I also completed **Challenge 1: Advanced Edge-Case Testing** — beyond the original three cases, the suite covers the hint direction, numeric-vs-text comparison (the `100` vs `50` bug), scoring behavior, and rejecting non-numeric input.
+I completed **Challenge 1: Advanced Edge-Case Testing** — beyond the original three cases, the suite covers the hint direction, numeric-vs-text comparison (the `100` vs `50` bug), scoring behavior, rejecting non-numeric input, and tricky inputs like negatives, decimals, huge numbers, and whitespace. It also covers the Hot/Cold proximity labels and the high-score store.
 
 ```
-$ pytest tests/ -v
+$ pytest -v
 ============================= test session starts ==============================
 platform darwin -- Python 3.11.4, pytest-9.1.0, pluggy-1.6.0
 rootdir: .
-collected 9 items
+collected 20 items
 
-tests/test_game_logic.py::test_winning_guess PASSED                      [ 11%]
-tests/test_game_logic.py::test_guess_too_high PASSED                     [ 22%]
-tests/test_game_logic.py::test_guess_too_low PASSED                      [ 33%]
-tests/test_game_logic.py::test_large_guess_is_too_high PASSED            [ 44%]
-tests/test_game_logic.py::test_check_guess_handles_string_secret PASSED  [ 55%]
-tests/test_game_logic.py::test_hint_points_player_the_right_way PASSED   [ 66%]
-tests/test_game_logic.py::test_wrong_guess_does_not_change_score PASSED  [ 77%]
-tests/test_game_logic.py::test_first_guess_win_scores_full PASSED        [ 88%]
-tests/test_game_logic.py::test_parse_guess_rejects_non_numbers PASSED    [100%]
+tests/test_game_logic.py::test_winning_guess PASSED                      [  5%]
+tests/test_game_logic.py::test_guess_too_high PASSED                     [ 10%]
+tests/test_game_logic.py::test_guess_too_low PASSED                      [ 15%]
+tests/test_game_logic.py::test_large_guess_is_too_high PASSED            [ 20%]
+tests/test_game_logic.py::test_check_guess_handles_string_secret PASSED  [ 25%]
+tests/test_game_logic.py::test_hint_points_player_the_right_way PASSED   [ 30%]
+tests/test_game_logic.py::test_wrong_guess_does_not_change_score PASSED  [ 35%]
+tests/test_game_logic.py::test_first_guess_win_scores_full PASSED        [ 40%]
+tests/test_game_logic.py::test_parse_guess_rejects_non_numbers PASSED    [ 45%]
+tests/test_game_logic.py::test_negative_number_is_compared_numerically PASSED [ 50%]
+tests/test_game_logic.py::test_decimal_input_is_truncated_to_int PASSED  [ 55%]
+tests/test_game_logic.py::test_extremely_large_value_does_not_crash PASSED [ 60%]
+tests/test_game_logic.py::test_whitespace_only_input_is_rejected PASSED  [ 65%]
+tests/test_game_logic.py::test_proximity_exact_is_bullseye PASSED        [ 70%]
+tests/test_game_logic.py::test_proximity_close_is_hot PASSED             [ 75%]
+tests/test_game_logic.py::test_proximity_far_is_freezing PASSED          [ 80%]
+tests/test_high_score.py::test_missing_file_reads_as_zero PASSED         [ 85%]
+tests/test_high_score.py::test_save_then_load_roundtrip PASSED           [ 90%]
+tests/test_high_score.py::test_update_only_keeps_the_best PASSED         [ 95%]
+tests/test_high_score.py::test_corrupt_file_reads_as_zero PASSED         [100%]
 
-============================== 9 passed in 0.01s ===============================
+============================== 20 passed in 0.01s ===============================
 ```
 
 ## 🚀 Stretch Features
 
-- [ ] [If you choose to complete Challenge 4, describe the Enhanced UI changes here — a screenshot is optional]
+- [x] **Challenge 1 — Advanced Edge-Case Testing.** Added tests for negatives, decimals, extremely large values, and whitespace-only input (see the Test Results above and `tests/test_game_logic.py`).
+
+- [x] **Challenge 2 — Feature Expansion: persistent high score.** Added `high_score.py` (`load_high_score`, `save_high_score`, `update_high_score`) which saves the best score to `high_score.json`. `app.py` shows it in the sidebar (`st.sidebar.metric("🏆 Best score", ...)`) and calls `update_high_score(...)` when you win.
+
+- [x] **Challenge 3 — Documentation & Linting.** Every function in `logic_utils.py` and `high_score.py` has a full Args/Returns docstring, and the code passes `flake8` with no findings.
+
+- [x] **Challenge 4 — Enhanced Game UI.** The game now gives structured, friendly feedback:
+  - **Color-coded directional hints** in `app.py` — "Too High" renders as a red `st.error("📉 Go LOWER!")` and "Too Low" as a blue `st.info("📈 Go HIGHER!")`.
+  - **Hot/Cold temperature read-out** powered by the new `proximity_label(guess, secret, low, high)` in `logic_utils.py`, which returns labels like `🎯 Bullseye`, `🔥 Boiling hot`, `♨️ Hot`, `🌤️ Warm`, `❄️ Cold`, or `🧊 Freezing` (thresholds scale with the difficulty's range).
+  - **Session summary table** rendered with `st.table(...)` at the bottom of `app.py`, listing each Guess, Result, and Closeness for the current game, and staying visible after the game ends.
+
+- [x] **Challenge 5 — AI Model Comparison.** See the comparison write-up in `ai_interactions.md`.

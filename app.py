@@ -2,11 +2,13 @@ import random
 
 import streamlit as st
 
+from high_score import load_high_score, update_high_score
 from logic_utils import (
     check_guess,
     get_range_for_difficulty,
     hint_for,
     parse_guess,
+    proximity_label,
     update_score,
 )
 
@@ -34,6 +36,7 @@ low, high = get_range_for_difficulty(difficulty)
 
 st.sidebar.caption(f"Range: {low} to {high}")
 st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
+st.sidebar.metric("🏆 Best score", load_high_score())
 
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
@@ -48,6 +51,7 @@ if "score" not in st.session_state:
 if "status" not in st.session_state:
     st.session_state.status = "playing"
 
+# Each entry is a row: {"Guess", "Result", "Closeness"}.
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -90,14 +94,15 @@ if new_game:
     st.success("New game started.")
     st.rerun()
 
-if st.session_state.status != "playing":
+game_active = st.session_state.status == "playing"
+
+if not game_active:
     if st.session_state.status == "won":
         st.success("You already won. Start a new game to play again.")
     else:
         st.error("Game over. Start a new game to try again.")
-    st.stop()
 
-if submit:
+if submit and game_active:
     ok, guess_int, err = parse_guess(raw_guess)
 
     if not ok:
@@ -105,13 +110,26 @@ if submit:
         st.error(err)
     else:
         st.session_state.attempts += 1
-        st.session_state.history.append(guess_int)
 
         # Compare against the real secret (an int), every attempt.
         outcome = check_guess(guess_int, st.session_state.secret)
+        closeness = proximity_label(
+            guess_int, st.session_state.secret, low, high
+        )
 
-        if show_hint:
-            st.warning(hint_for(outcome))
+        st.session_state.history.append({
+            "Guess": guess_int,
+            "Result": outcome,
+            "Closeness": closeness,
+        })
+
+        if show_hint and outcome != "Win":
+            # Color-code the direction: red for too high, blue for too low.
+            if outcome == "Too High":
+                st.error(hint_for(outcome))
+            else:
+                st.info(hint_for(outcome))
+            st.caption(f"Temperature: {closeness}")
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -122,10 +140,13 @@ if submit:
         if outcome == "Win":
             st.balloons()
             st.session_state.status = "won"
+            best = update_high_score(st.session_state.score)
             st.success(
                 f"You won! The secret was {st.session_state.secret}. "
                 f"Final score: {st.session_state.score}"
             )
+            if st.session_state.score >= best:
+                st.caption("🏆 New best score!")
         elif st.session_state.attempts >= attempt_limit:
             st.session_state.status = "lost"
             st.error(
@@ -133,6 +154,12 @@ if submit:
                 f"The secret was {st.session_state.secret}. "
                 f"Score: {st.session_state.score}"
             )
+
+# Session summary table — stays visible even after the game ends.
+if st.session_state.history:
+    st.divider()
+    st.subheader("📋 Session summary")
+    st.table(st.session_state.history)
 
 st.divider()
 st.caption("A small Streamlit guessing game.")
