@@ -91,16 +91,14 @@ $ flake8 app.py logic_utils.py high_score.py conftest.py tests/
 
 > Compare two AI models on the same task.
 
-> **Note:** I compared two different *fix approaches* suggested for the same bug. (I wasn't able to run two separate vendor models side by side, so these are two distinct AI-suggested variants rather than, say, Claude vs. Gemini specifically.)
+**Task given to both models:** I pasted the original buggy `check_guess` from Phase 1 into two assistants with the same prompt — the hint was backwards ("Too High" but "Go HIGHER!") and it behaved unreliably on some turns — and asked each to fix it and explain why the fix works.
 
-**Task given to both:** Fix the backwards-hint bug from Phase 1 — `check_guess` returned the right label but the wrong message ("Too High" → "Go HIGHER!").
-
-| | Approach A (defensive) | Approach B (concise) |
-|-|------------------------|----------------------|
-| **Summary** | Keep `check_guess` returning a `(outcome, message)` tuple, add `try/except TypeError` to coerce types, and swap the messages inside the tuple. | Make `check_guess` return just the outcome string; coerce both sides to `int`; keep the player-facing text in a separate `hint_for()` lookup. |
-| **More Pythonic?** | Less so — the `try/except` around comparisons hides type problems instead of preventing them, and bundling message + outcome mixes concerns. | More so — small single-responsibility functions, a dict lookup for messages, no exception-driven control flow. |
-| **Clearer explanation?** | Explained the symptom ("messages are swapped") well. | Explained *why* the type bug happened (`"100" < "50"` as text) and why splitting outcome from message keeps the existing tests valid. |
+| | Model A — ChatGPT | Model B — Claude |
+|-|-------------------|------------------|
+| **Fix returned** | Swapped only the hint messages ("Too High" → "📉 Go LOWER!", "Too Low" → "📈 Go HIGHER!") in *both* the normal path and the `try/except` fallback. Left the overall structure (the `try/except` and the `str()` fallback) unchanged. | Coerced `guess` and `secret` to `int()` at the top (with a guard that returns an error on bad input), deleted the string-comparison fallback entirely, and used a clean `if/elif/else` with the corrected messages. |
+| **More Pythonic?** | Less so — it keeps the convoluted `try/except` and the `str()` fallback, so the underlying type bug is still lurking; it only patches the symptom (the text). | More so — converting to `int` up front removes the exception-driven control flow and the buggy fallback, leaving a short, readable function. (This is the same direction I took in my own fix.) |
+| **Clearer explanation?** | Accurate and honest: it correctly noted the comparison logic was already right and only the messages were swapped, and it openly admitted the snippet shows no turn-based logic, so it *couldn't* explain the "even-numbered turns" symptom. | More complete on the "why": it explained the message swap **and** traced the unreliable turns to a type mismatch (`int` vs `str`) that raised a `TypeError` the original `except` block mishandled — though it made some assumptions about how inputs were captured. |
 
 **Which did you prefer and why?**
 
-I went with **Approach B**. Approach A would have kept the fragile `try/except` comparison and forced me to rewrite the starter tests (which expect `check_guess(50, 50) == "Win"`, a plain string). Approach B fixed the root cause by comparing numerically, kept the original tests passing untouched, and separated "what's the outcome" from "what do we tell the player," which made the Hot/Cold UI feature easier to add later.
+I preferred **Claude's (Model B)** fix. ChatGPT correctly fixed the visible symptom — the swapped hint text — and was refreshingly honest that it couldn't explain the even-turn glitch from the snippet alone. But it left the brittle `try/except` + string-comparison structure in place, which is exactly what caused the type bug in the first place. Claude went after the root cause by comparing numerically and removing the fallback, which is both more Pythonic and the same approach I used in the project. The trade-off: Claude's explanation was more thorough but slightly speculative about input handling, while ChatGPT stuck strictly to what the code actually proved.
